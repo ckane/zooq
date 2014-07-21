@@ -7,9 +7,11 @@
 #
 
 from time import sleep
-from os import waitpid, WNOHANG, fork, pipe, fdopen, close, O_NONBLOCK
+from os import waitpid, WNOHANG, fork, pipe, fdopen, close, O_NONBLOCK, remove, access
+import os.path
+from socket import socket, AF_UNIX, SOCK_STREAM
 from select import select
-from fcntl import fcntl, F_SETFL
+from fcntl import fcntl, F_SETFL, F_SETFD, FD_CLOEXEC
 import json
 from ztasks import *
 import ztasks.ztask_base
@@ -25,6 +27,8 @@ class ZooQ(object):
         self.__runq_pid = -1
         self.__pwrite = False
         self.__qread = False
+        self.__listener = None
+        self.__connected = []
 
     def qsize(self):
         return len(self.__pending_queue) + len(self.__active_queue)
@@ -41,20 +45,42 @@ class ZooQ(object):
         self.__pwrite.flush()
 
     def getwork(self, heartbeat=0):
-        rs, ws, xs = select([self.__qread], [], [], heartbeat)
-        if len(rs) > 0:
-            job_request = self.__qread.readline()
-            print("Request received: {0}".format(job_request.strip()))
-            if(len(job_request) > 0):
-                if job_request.strip().lower() == 'shutdown':
-                    self.__shutdown = True
-                else:
-                    newtask = json.loads(job_request.strip())
-                    newtask['pid'] = -1
-                    if newtask['priority'] == 'high':
-                        self.__pending_queue.append(newtask)
+        rdrs = [self.__qread] + self.__connected
+
+        if self.__listener:
+            rdrs.append(self.__listener)
+
+        rs, ws, xs = select(rdrs, [], rdrs, heartbeat)
+        for r in rs:
+            if self.__listener is r:
+                conn_sock, conn_addr = self.__listener.accept()
+                conn_sock.setblocking(0)
+                fcntl(conn_sock, F_SETFD, FD_CLOEXEC)
+                self.__connected.append(conn_sock.makefile())
+            else:
+                job_request = r.readline()
+                print("Request received: {0}".format(job_request.strip()))
+                if(len(job_request) > 0):
+                    if job_request.strip().lower() == 'shutdown':
+                        self.__shutdown = True
                     else:
-                        self.__pending_queue.insert(0, newtask)
+                        newtask = json.loads(job_request.strip())
+                        newtask['pid'] = -1
+                        if newtask['priority'] == 'high':
+                            self.__pending_queue.append(newtask)
+                        else:
+                            self.__pending_queue.insert(0, newtask)
+
+        for x in xs:
+            if x is self.__listener:
+                self.__listener.close()
+                self.__listener = None
+            else:
+                for i in xrange(0, len(self.__connected)):
+                    if x is self.__connected[i]:
+                        self.__connected[i].close()
+                        self.__connected.pop(i)
+                        break
 
     def cleanchildren(self):
         try:
@@ -77,7 +103,10 @@ class ZooQ(object):
                     p_id = 0
 
     def Run(self):
+        # Create a pipe between the calling process and the run-queue
         self.__qread, self.__pwrite = pipe()
+
+        # Create a UNIX socket listener as well
         self.__runq_pid = fork()
 
         if self.__runq_pid != 0:
@@ -86,11 +115,26 @@ class ZooQ(object):
             self.__pwrite = fdopen(self.__pwrite, 'w')
             return
 
+        # Create a UNIX socket, in the run-queue process only
+        self.__listener = socket(AF_UNIX, SOCK_STREAM)
+        self.__listener.setblocking(0)
+
+        try:
+            remove('/tmp/zooq.sock')
+        except OSError:
+            if os.path.exists('/tmp/zooq.sock'):
+                raise
+
+        self.__listener.bind('/tmp/zooq.sock')
+        self.__listener.listen(100)
+
         sys.stdin.close()
         close(self.__pwrite)
         self.__pwrite = False
         self.__qread = fdopen(self.__qread)
         fcntl(self.__qread, F_SETFL, O_NONBLOCK)
+        fcntl(self.__qread, F_SETFD, FD_CLOEXEC)
+        fcntl(self.__listener, F_SETFD, FD_CLOEXEC)
         while not self.__shutdown:
             # Clean up any exited children
             self.cleanchildren()
