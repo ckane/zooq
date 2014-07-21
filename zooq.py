@@ -93,34 +93,11 @@ class ZooQ(object):
         fcntl(self.__qread, F_SETFL, O_NONBLOCK)
         while not self.__shutdown:
             # Clean up any exited children
-            try:
-                p_id, r_status = waitpid(-1, WNOHANG)
-            except OSError as e:
-                if e.errno == 10:
-                    p_id = 0
-
-            while p_id != 0:
-                for x in xrange(len(self.__active_queue)):
-                    if self.__active_queue[x]['pid'] == p_id:
-                        self.__active_queue.pop(x)
-                        break
+            self.cleanchildren()
 
             # If workers are full, or no pending work to do, then just sleep
             if len(self.__active_queue) >= self.__max_procs or len(self.__pending_queue) == 0:
-                rs, ws, xs = select([self.__qread], [], [], self.__heartbeat)
-                if len(rs) > 0:
-                    job_request = self.__qread.readline()
-                    print("Request received: {0}".format(job_request.strip()))
-                    if(len(job_request) > 0):
-                        if job_request.strip().lower() == 'shutdown':
-                            self.__shutdown = True
-                        else:
-                            newtask = json.loads(job_request.strip())
-                            newtask['pid'] = -1
-                            if newtask['priority'] == 'high':
-                                self.__pending_queue.append(newtask)
-                            else:
-                                self.__pending_queue.insert(0, newtask)
+                self.getwork(self.__heartbeat)
             else:
                 while len(self.__active_queue) < self.__max_procs and len(self.__pending_queue) > 0:
                     # Attempt to migrate more tasks from the pending queue while there are pending tasks,
