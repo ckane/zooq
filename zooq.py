@@ -3,7 +3,7 @@
 
 #
 # Schema for pending queue objects:
-# {'task_obj': <obj id>, 'task_name': 'task name', 'pid': 999, 'priority': 'low'}
+# {'task_obj': <obj id>, 'task_name': 'task name', 'pid': 999, 'priority': 'low', 'dependson': []}
 #
 
 from time import sleep
@@ -32,8 +32,8 @@ class ZooQ(object):
     def waitsize(self):
         return len(self.__pending_queue)
 
-    def sendtask(self, task_name, objid, priority='low'):
-        self.__pwrite.write(json.dumps({'task_name': task_name, 'task_obj': objid, 'pid': -1, 'priority': priority}) + '\n')
+    def sendtask(self, task_name, objid, dependson=[], priority='low'):
+        self.__pwrite.write(json.dumps({'task_name': task_name, 'task_obj': objid, 'pid': -1, 'priority': priority, 'dependson': dependson}) + '\n')
         self.__pwrite.flush()
 
     def sendshutdown(self):
@@ -102,23 +102,36 @@ class ZooQ(object):
                 while len(self.__active_queue) < self.__max_procs and len(self.__pending_queue) > 0:
                     # Attempt to migrate more tasks from the pending queue while there are pending tasks,
                     # and as long as there are available worker slots
-                    nextjob = self.__pending_queue.pop()
-                    print('Available: {0}'.format(json.dumps(dir(ztasks))))
-                    if nextjob['task_name'] in dir(ztasks):
-                        task_instance = eval('ztasks.{0}.{0}'.format(nextjob['task_name']))(nextjob['task_obj'])
-                        nextjob['pid'] = fork()
+                    nextjob = None
+                    active_sigs = set(['{0}-{1}'.format(x['task_name'], x['task_obj']) for x in self.__active_queue])
+                    for i in xrange(len(self.__pending_queue) - 1, -1, -1):
+                        #print(self.__pending_queue[i])
+                        pending_sigs = set(self.__pending_queue[i]['dependson'])
+                        if len(active_sigs & pending_sigs) == 0:
+                            nextjob = self.__pending_queue.pop(i)
+                            break
 
-                        if nextjob['pid'] == 0:
-                            # We are executing as the child
-                            task_instance.dowork()
-                            sys.exit(0)
+                    if nextjob:
+                        print('Submitting: {0}'.format(json.dumps(nextjob)))
+                        if nextjob['task_name'] in dir(ztasks):
+                            task_instance = eval('ztasks.{0}.{0}'.format(nextjob['task_name']))(nextjob['task_obj'])
+                            nextjob['pid'] = fork()
+
+                            if nextjob['pid'] == 0:
+                                # We are executing as the child
+                                task_instance.dowork()
+                                sys.exit(0)
+                            else:
+                                # We are executing as the parent
+                                self.__active_queue.append(nextjob)
+                                print('Active: {0}'.format(json.dumps(self.__active_queue)))
                         else:
-                            # We are executing as the parent
-                            self.__active_queue.append(nextjob)
+                            # In the event that the task spec referenced a non-existent task_name, display a
+                            # friendly error, and discard it
+                            print("Task {0} is not defined, discarding".format(nextjob['task_name']))
                     else:
-                        # In the event that the task spec referenced a non-existent task_name, display a
-                        # friendly error, and discard it
-                        print("Task {0} is not defined, discarding".format(nextjob['task_name']))
+                        self.cleanchildren()
+                        self.getwork(0.25) # Also check for new work here, to prevent deadlocks, but check faster
 
         # Exit the Run-Queue
         sys.exit(0)
