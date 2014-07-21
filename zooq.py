@@ -40,6 +40,42 @@ class ZooQ(object):
         self.__pwrite.write('shutdown\n')
         self.__pwrite.flush()
 
+    def getwork(self, heartbeat=0):
+        rs, ws, xs = select([self.__qread], [], [], heartbeat)
+        if len(rs) > 0:
+            job_request = self.__qread.readline()
+            print("Request received: {0}".format(job_request.strip()))
+            if(len(job_request) > 0):
+                if job_request.strip().lower() == 'shutdown':
+                    self.__shutdown = True
+                else:
+                    newtask = json.loads(job_request.strip())
+                    newtask['pid'] = -1
+                    if newtask['priority'] == 'high':
+                        self.__pending_queue.append(newtask)
+                    else:
+                        self.__pending_queue.insert(0, newtask)
+
+    def cleanchildren(self):
+        try:
+            p_id, r_status = waitpid(-1, WNOHANG)
+        except OSError as e:
+            if e.errno == 10:
+                p_id = 0
+
+        while p_id != 0:
+            print("Reclaimed {0}".format(p_id))
+            for x in xrange(len(self.__active_queue)):
+                if self.__active_queue[x]['pid'] == p_id:
+                    self.__active_queue.pop(x)
+                    print('Active: {0}'.format(json.dumps(self.__active_queue)))
+                    break
+            try:
+                p_id, r_status = waitpid(-1, WNOHANG)
+            except OSError as e:
+                if e.errno == 10:
+                    p_id = 0
+
     def Run(self):
         self.__qread, self.__pwrite = pipe()
         self.__runq_pid = fork()
