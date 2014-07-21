@@ -107,3 +107,5 @@ class ZooQ(object):
                         # friendly error, and discard it
                         print("Task {0} is not defined, discarding".format(nextjob['task_name']))
 
+        # Exit the Run-Queue
+        sys.exit(0)
