@@ -44,6 +44,10 @@ class ZooQ(object):
         self.__pwrite.write('shutdown\n')
         self.__pwrite.flush()
 
+    def in_queue(self, task_name, task_obj):
+        return filter(lambda a_task: a_task['task_name'] == task_name and a_task['task_obj'] == task_obj,
+                      self.__pending_tasks + self.__active_tasks)
+
     def getwork(self, heartbeat=0):
         rdrs = [self.__qread] + self.__connected
 
@@ -66,10 +70,11 @@ class ZooQ(object):
                     else:
                         newtask = json.loads(job_request.strip())
                         newtask['pid'] = -1
-                        if newtask['priority'] == 'high':
-                            self.__pending_queue.append(newtask)
-                        else:
-                            self.__pending_queue.insert(0, newtask)
+                        if not self.in_queue(newtask['task_name'], newtask['task_obj']):
+                            if newtask['priority'] == 'high':
+                                self.__pending_queue.append(newtask)
+                            else:
+                                self.__pending_queue.insert(0, newtask)
 
         for x in xs:
             if x is self.__listener:
