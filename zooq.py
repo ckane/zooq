@@ -18,7 +18,7 @@ import ztasks.ztask_base
 import sys
 
 class ZooQ(object):
-    def __init__(self, max_procs=8, heartbeat=10):
+    def __init__(self, max_procs=8, heartbeat=10, socket_name='/tmp/zooq.sock'):
         self.__max_procs = max_procs
         self.__pending_queue = []
         self.__active_queue = []
@@ -29,6 +29,7 @@ class ZooQ(object):
         self.__qread = False
         self.__listener = None
         self.__connected = []
+        self.__socket_name = socket_name
 
     def qsize(self):
         return len(self.__pending_queue) + len(self.__active_queue)
@@ -125,12 +126,12 @@ class ZooQ(object):
         self.__listener.setblocking(0)
 
         try:
-            remove('/tmp/zooq.sock')
+            remove(self.__socket_name)
         except OSError:
-            if os.path.exists('/tmp/zooq.sock'):
+            if os.path.exists(self.__socket_name)
                 raise
 
-        self.__listener.bind('/tmp/zooq.sock')
+        self.__listener.bind(self.__socket_name)
         self.__listener.listen(100)
 
         sys.stdin.close()
