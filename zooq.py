@@ -128,7 +128,7 @@ class ZooQ(object):
         try:
             remove(self.__socket_name)
         except OSError:
-            if os.path.exists(self.__socket_name)
+            if os.path.exists(self.__socket_name):
                 raise
 
         self.__listener.bind(self.__socket_name)
