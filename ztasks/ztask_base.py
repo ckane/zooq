@@ -3,6 +3,9 @@ from os import getpid
 from time import sleep
 
 class ztask_base(object):
+    def objid(self):
+        return self.__objid
+
     def __init__(self, objid):
         self.__objid = objid
 
