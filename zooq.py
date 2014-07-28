@@ -47,7 +47,7 @@ class ZooQ(object):
 
     def in_queue(self, task_name, task_obj):
         return filter(lambda a_task: a_task['task_name'] == task_name and a_task['task_obj'] == task_obj,
-                      self.__pending_tasks + self.__active_tasks)
+                      self.__pending_queue + self.__active_queue)
 
     def getwork(self, heartbeat=0):
         rdrs = [self.__qread] + self.__connected
