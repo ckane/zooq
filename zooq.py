@@ -147,7 +147,7 @@ class ZooQ(object):
 
             # If workers are full, or no pending work to do, then just sleep
             if len(self.__active_queue) >= self.__max_procs or len(self.__pending_queue) == 0:
-                self.getwork(self.__heartbeat)
+                self.getwork(heartbeat=self.__heartbeat)
             else:
                 while len(self.__active_queue) < self.__max_procs and len(self.__pending_queue) > 0:
                     # Attempt to migrate more tasks from the pending queue while there are pending tasks,
