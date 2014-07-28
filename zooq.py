@@ -94,8 +94,8 @@ class ZooQ(object):
             else:
                 for i in xrange(0, len(self.__connected)):
                     if x is self.__connected[i]:
-                        self.__connected[i].close()
                         self.__connected.pop(i)
+                        x.close()
                         break
 
     def cleanchildren(self):
