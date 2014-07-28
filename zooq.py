@@ -153,7 +153,7 @@ class ZooQ(object):
                     # Attempt to migrate more tasks from the pending queue while there are pending tasks,
                     # and as long as there are available worker slots
                     nextjob = None
-                    active_sigs = set(['{0}-{1}'.format(x['task_name'], x['task_obj']) for x in self.__active_queue])
+                    active_sigs = set(['{0}-{1}'.format(x['task_name'], x['task_obj']) for x in (self.__active_queue + self.__pending_queue)])
                     for i in xrange(len(self.__pending_queue) - 1, -1, -1):
                         #print(self.__pending_queue[i])
                         pending_sigs = set(self.__pending_queue[i]['dependson'])
