@@ -64,18 +64,28 @@ class ZooQ(object):
                 self.__connected.append(conn_sock.makefile())
             else:
                 job_request = r.readline()
+
+                # If returning 0 data, then the handle must have closed. Clean it up
+                if not job_request:
+                    for i in xrange(0, len(self.__connected)):
+                        if r is self.__connected[i]:
+                            self.__connected.pop(i)
+                            r.close()
+                            break
+
+                    continue
+
                 print("Request received: {0}".format(job_request.strip()))
-                if(len(job_request) > 0):
-                    if job_request.strip().lower() == 'shutdown':
-                        self.__shutdown = True
-                    else:
-                        newtask = json.loads(job_request.strip())
-                        newtask['pid'] = -1
-                        if not self.in_queue(newtask['task_name'], newtask['task_obj']):
-                            if newtask['priority'] == 'high':
-                                self.__pending_queue.append(newtask)
-                            else:
-                                self.__pending_queue.insert(0, newtask)
+                if job_request.strip().lower() == 'shutdown':
+                    self.__shutdown = True
+                else:
+                    newtask = json.loads(job_request.strip())
+                    newtask['pid'] = -1
+                    if not self.in_queue(newtask['task_name'], newtask['task_obj']):
+                        if newtask['priority'] == 'high':
+                            self.__pending_queue.append(newtask)
+                        else:
+                            self.__pending_queue.insert(0, newtask)
 
         for x in xs:
             if x is self.__listener:
