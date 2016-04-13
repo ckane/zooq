@@ -16,12 +16,15 @@ import json
 from ztasks import *
 import ztasks.ztask_base
 import sys
+from zooqdb import ZooQDB
 
 class ZooQ(object):
-    def __init__(self, max_procs=8, heartbeat=10, socket_name='/tmp/zooq.sock'):
+    def __init__(self, max_procs=8, heartbeat=10, socket_name='/tmp/zooq.sock', db=None):
+        if db:
+            self.__db = db
+        else:
+            self.__db = ZooQDB()
         self.__max_procs = max_procs
-        self.__pending_queue = []
-        self.__active_queue = []
         self.__shutdown = False
         self.__heartbeat = heartbeat
         self.__runq_pid = -1
@@ -31,12 +34,6 @@ class ZooQ(object):
         self.__connected = []
         self.__socket_name = socket_name
 
-    def qsize(self):
-        return len(self.__pending_queue) + len(self.__active_queue)
-
-    def waitsize(self):
-        return len(self.__pending_queue)
-
     def sendtask(self, task_name, objid, dependson=[], priority='low'):
         self.__pwrite.write(json.dumps({'task_name': task_name, 'task_obj': objid, 'pid': -1, 'priority': priority, 'dependson': dependson}) + '\n')
         self.__pwrite.flush()
@@ -44,10 +41,6 @@ class ZooQ(object):
     def sendshutdown(self):
         self.__pwrite.write('shutdown\n')
         self.__pwrite.flush()
-
-    def in_queue(self, task_name, task_obj):
-        return filter(lambda a_task: a_task['task_name'] == task_name and a_task['task_obj'] == task_obj,
-                      self.__pending_queue + self.__active_queue)
 
     def getwork(self, heartbeat=0):
         rdrs = [self.__qread] + self.__connected
@@ -81,11 +74,8 @@ class ZooQ(object):
                 else:
                     newtask = json.loads(job_request.strip())
                     newtask['pid'] = -1
-                    if not self.in_queue(newtask['task_name'], newtask['task_obj']):
-                        if newtask['priority'] == 'high':
-                            self.__pending_queue.append(newtask)
-                        else:
-                            self.__pending_queue.insert(0, newtask)
+                    if not self.__db.in_queue(newtask['task_name'], newtask['task_obj']):
+                        self.__db.enqueue(newtask)
 
         for x in xs:
             if x is self.__listener:
@@ -107,11 +97,8 @@ class ZooQ(object):
 
         while p_id != 0:
             print("Reclaimed {0}".format(p_id))
-            for x in xrange(len(self.__active_queue)):
-                if self.__active_queue[x]['pid'] == p_id:
-                    self.__active_queue.pop(x)
-                    print('Active: {0}'.format(json.dumps(self.__active_queue)))
-                    break
+            if self.__db.reclaim(p_id):
+                print('Active: {0}'.format(json.dumps(self.__db.get_active())))
             try:
                 p_id, r_status = waitpid(-1, WNOHANG)
             except OSError as e:
@@ -156,20 +143,13 @@ class ZooQ(object):
             self.cleanchildren()
 
             # If workers are full, or no pending work to do, then just sleep
-            if len(self.__active_queue) >= self.__max_procs or len(self.__pending_queue) == 0:
+            if self.__db.get_alen() >= self.__max_procs or self.__db.get_plen() == 0:
                 self.getwork(heartbeat=self.__heartbeat)
             else:
-                while len(self.__active_queue) < self.__max_procs and len(self.__pending_queue) > 0:
+                while self.__db.get_alen() < self.__max_procs and self.__db.get_plen() > 0:
                     # Attempt to migrate more tasks from the pending queue while there are pending tasks,
                     # and as long as there are available worker slots
-                    nextjob = None
-                    active_sigs = set(['{0}-{1}'.format(x['task_name'], x['task_obj']) for x in (self.__active_queue + self.__pending_queue)])
-                    for i in xrange(len(self.__pending_queue) - 1, -1, -1):
-                        #print(self.__pending_queue[i])
-                        pending_sigs = set(self.__pending_queue[i]['dependson'])
-                        if len(active_sigs & pending_sigs) == 0:
-                            nextjob = self.__pending_queue.pop(i)
-                            break
+                    nextjob = self.__db.pop_next()
 
                     if nextjob:
                         print('Submitting: {0}'.format(json.dumps(nextjob)))
@@ -183,8 +163,8 @@ class ZooQ(object):
                                 sys.exit(0)
                             else:
                                 # We are executing as the parent
-                                self.__active_queue.append(nextjob)
-                                print('Active: {0}'.format(json.dumps(self.__active_queue)))
+                                self.__db.active_next(nextjob)
+                                print('Active: {0}'.format(json.dumps(self.__db.get_active())))
                         else:
                             # In the event that the task spec referenced a non-existent task_name, display a
                             # friendly error, and discard it
