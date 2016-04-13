@@ -33,7 +33,8 @@ class ZooQDB(object):
         for x in xrange(len(self.__active_queue)):
             if self.__active_queue[x]['pid'] == p_id:
                 self.__active_queue.pop(x)
-                break
+                return True
+        return False
 
     def get_active(self):
         return self.__active_queue.copy()
