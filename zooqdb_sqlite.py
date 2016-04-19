@@ -80,6 +80,8 @@ class ZooQDB_SQLite(ZooQDB):
                 pri = 'high'
             if row[0] != cur_task_name or row[4] != cur_task_obj:
                 if len(cur_task_name) > 0 and len(cur_task_obj) > 0:
+                    if active_item:
+                        active_item['depends_on'] = filter(lambda x: x != None, active_item['depends_on'])
                     activeq.append(active_item)
 
                 active_item = {'task_name': row[0], 'priority': pri,
@@ -90,8 +92,6 @@ class ZooQDB_SQLite(ZooQDB):
                 cur_task_obj = active_item['task_obj']
             else:
                 active_item['depends_on'].append(row[2])
-
-        active_item['depends_on'] = filter(lambda x: x != None, active_item['depends_on'])
 
         curs.close()
         return activeq
