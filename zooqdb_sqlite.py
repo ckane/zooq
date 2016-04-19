@@ -93,6 +93,9 @@ class ZooQDB_SQLite(ZooQDB):
             else:
                 active_item['depends_on'].append(row[2])
 
+        if active_item:
+            active_item['depends_on'] = filter(lambda x: x != None, active_item['depends_on'])
+            activeq.append(active_item)
         curs.close()
         return activeq
 
