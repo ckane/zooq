@@ -65,6 +65,7 @@ class ZooQDB_SQLite(ZooQDB):
         curs = self.__dbconn.cursor()
         curs.execute('DELETE FROM `zooq` WHERE `pid`=?', (p_id,))
         rc = curs.rowcount
+        self.__dbconn.commit()
         curs.close()
         return rc > 0
 
