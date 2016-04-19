@@ -97,10 +97,10 @@ class ZooQDB_SQLite(ZooQDB):
         return activeq
 
     def get_active(self):
-        return get_tasks(pending=False)
+        return self.get_tasks(pending=False)
 
     def get_pending(self):
-        return get_tasks(pending=True)
+        return self.get_tasks(pending=True)
 
     def get_all(self):
         return self.get_active() + self.get_pending()
