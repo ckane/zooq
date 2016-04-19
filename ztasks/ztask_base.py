@@ -11,5 +11,5 @@ class ztask_base(object):
 
     def dowork(self):
         print "Doing work, waiting {0} seconds...".format(self.__objid)
-        sleep(self.__objid)
+        sleep(float(self.__objid))
         print "Done waiting {0} seconds...".format(self.__objid)
