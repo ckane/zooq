@@ -66,9 +66,9 @@ class ZooQDB_SQLite(ZooQDB):
         return rc > 0
 
     def get_tasks(self, pending=False):
-        query = 'SELECT FROM `zooq` WHERE `pid` IS NOT NULL GROUP BY `task_name`,`task_obj`'
+        query = 'SELECT * FROM `zooq` WHERE `pid` IS NOT NULL GROUP BY `task_name`,`task_obj`'
         if pending:
-            query = 'SELECT FROM `zooq` WHERE `pid` IS NULL GROUP BY `task_name`,`task_obj`'
+            query = 'SELECT * FROM `zooq` WHERE `pid` IS NULL GROUP BY `task_name`,`task_obj`'
         activeq = []
         active_item = {}
         curs = self.__dbconn.cursor()
