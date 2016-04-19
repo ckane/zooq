@@ -24,25 +24,25 @@ class ZooQDB_SQLite(ZooQDB):
     def qsize(self):
         curs = self.__dbconn.cursor()
         curs.execute('SELECT DISTINCT `task_name`,`task_obj` FROM `zooq`')
-        res = curs.rowcount
+        res = curs.fetchall()
         curs.close()
-        return res
+        return len(res)
 
     def waitsize(self):
         curs = self.__dbconn.cursor()
         # When PID is NULL, the task is in pending queue
         curs.execute('SELECT DISTINCT `task_name`,`task_obj` FROM `zooq` WHERE `pid` IS NULL')
-        res = curs.rowcount
+        res = curs.fetchall()
         curs.close()
-        return res
+        return len(res)
 
     def in_queue(self, task_name, task_obj):
         curs = self.__dbconn.cursor()
         curs.execute('''SELECT DISTINCT `task_name`,`task_obj`
                         FROM `zooq` WHERE `task_name` = ? AND `task_obj` = ?''', (task_name, task_obj))
-        res = curs.rowcount
+        res = curs.fetchall()
         curs.close()
-        return res != 0
+        return len(res) > 0
 
     def enqueue(self, task):
         curs = self.__dbconn.cursor()
@@ -108,16 +108,16 @@ class ZooQDB_SQLite(ZooQDB):
     def get_alen(self):
         curs = self.__dbconn.cursor()
         curs.execute('SELECT DISTINCT `task_name`,`task_obj` FROM `zooq` WHERE `pid` IS NOT NULL')
-        res = curs.rowcount
+        res = curs.fetchall()
         curs.close()
-        return res
+        return len(res)
 
     def get_plen(self):
         curs = self.__dbconn.cursor()
         curs.execute('SELECT DISTINCT `task_name`,`task_obj` FROM `zooq` WHERE `pid` IS NULL')
-        res = curs.rowcount
+        res = curs.fetchall()
         curs.close()
-        return res
+        return len(res)
 
     def pop_next(self):
         active_sigs = set(['{0}-{1}'.format(x['task_name'],
