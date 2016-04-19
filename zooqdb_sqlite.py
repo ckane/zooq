@@ -128,7 +128,7 @@ class ZooQDB_SQLite(ZooQDB):
         nextjob = None
         pqueue = self.get_pending()
         for i in xrange(len(pqueue) - 1, -1, -1):
-            pending_sigs = set(pqueue[i]['dependson'])
+            pending_sigs = set(pqueue[i]['depends_on'])
             if len(active_sigs & pending_sigs) == 0:
                 nextjob = pqueue[i]
                 self.__dbconn.execute('DELETE FROM `zooq` WHERE `task_name` = ? AND `task_obj` = ?',
