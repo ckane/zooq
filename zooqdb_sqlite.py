@@ -15,7 +15,7 @@ class ZooQDB_SQLite(ZooQDB):
         self.__dbconn = sqlite3.connect(dbname)
         self.__dbconn.execute("""CREATE TABLE IF NOT EXISTS `zooq` (`task_name` TEXT NOT NULL,
                                                                     `priority` INTEGER NOT NULL,
-                                                                    `depends_on` TEXT NOT NULL,
+                                                                    `depends_on` TEXT,
                                                                     `pid` INTEGER,
                                                                     `task_obj` TEXT,
                                                                     PRIMARY KEY(`task_name`,`depends_on`,`task_obj`))""")
@@ -49,6 +49,9 @@ class ZooQDB_SQLite(ZooQDB):
         pri = 1
         if task['priority'] == 'high':
             pri = 0
+        if len(task['depends_on']) == 0:
+            curs.execute('INSERT INTO `zooq` (`task_name`,`priority`,`task_obj`) VALUES (?,?,?)',
+                         (task['task_name'], pri, task['task_obj']))
         for dep in task['depends_on']:
             curs.execute('INSERT INTO `zooq` (`task_name`,`priority`,`depends_on`,`task_obj`) VALUES (?,?,?,?)',
                          (task['task_name'], pri, dep, task['task_obj']))
@@ -87,6 +90,8 @@ class ZooQDB_SQLite(ZooQDB):
                 cur_task_obj = active_item['task_obj']
             else:
                 active_item['depends_on'].append(row[2])
+
+        active_item['depends_on'] = filter(lambda x: x != None, active_item['depends_on'])
 
         curs.close()
         return activeq
