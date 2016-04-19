@@ -19,7 +19,10 @@ class ZooQDB_SQLite(ZooQDB):
                                                                     `pid` INTEGER,
                                                                     `task_obj` TEXT,
                                                                     PRIMARY KEY(`task_name`,`depends_on`,`task_obj`))""")
-        self.__dbconn.execute('UPDATE `zooq` SET `priority`=0,`pid`=NULL WHERE `pid` != NULL')
+        curs = self.__dbconn.cursor()
+        curs.execute('UPDATE `zooq` SET `priority`=0,`pid`=NULL WHERE `pid` IS NOT NULL')
+        self.__dbconn.commit()
+        curs.close()
 
     def qsize(self):
         curs = self.__dbconn.cursor()
@@ -55,7 +58,7 @@ class ZooQDB_SQLite(ZooQDB):
         for dep in task['depends_on']:
             curs.execute('INSERT INTO `zooq` (`task_name`,`priority`,`depends_on`,`task_obj`) VALUES (?,?,?,?)',
                          (task['task_name'], pri, dep, task['task_obj']))
-        curs.commit()
+        self.__dbconn.commit()
         curs.close()
 
     def reclaim(self, p_id):
@@ -131,8 +134,11 @@ class ZooQDB_SQLite(ZooQDB):
             pending_sigs = set(pqueue[i]['depends_on'])
             if len(active_sigs & pending_sigs) == 0:
                 nextjob = pqueue[i]
-                self.__dbconn.execute('DELETE FROM `zooq` WHERE `task_name` = ? AND `task_obj` = ?',
-                                      (nextjob['task_name'], nextjob['task_obj']))
+                curs = self.__dbconn.cursor()
+                curs.execute('DELETE FROM `zooq` WHERE `task_name`=? AND `task_obj`=?',
+                            (nextjob['task_name'], nextjob['task_obj']))
+                self.__dbconn.commit()
+                curs.close()
                 return nextjob
 
         return None
@@ -148,3 +154,4 @@ class ZooQDB_SQLite(ZooQDB):
             for d in task['depends_on']:
                 self.__dbconn.execute('INSERT INTO `zooq` (`task_name`,`priority`,`pid`,`depends_on`,`task_obj`) VALUES (?,?,?,?,?)',
                                       (task['task_name'], pri, task['pid'], d, task['task_obj']))
+        self.__dbconn.commit()
