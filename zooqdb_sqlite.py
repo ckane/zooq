@@ -13,11 +13,11 @@ import sqlite3
 class ZooQDB_SQLite(ZooQDB):
     def __init__(self, dbname):
         self.__dbconn = sqlite3.connect(dbname)
-        self.__dbconn.execute("""CREATE TABLE IF NOT EXISTS `zooq` (`task_name` AS TEXT NOT NULL,
-                                                                    `priority` AS INTEGER NOT NULL,
-                                                                    `depends_on` AS TEXT NOT NULL,
-                                                                    `pid` AS INTEGER,
-                                                                    `task_obj` AS TEXT,
+        self.__dbconn.execute("""CREATE TABLE IF NOT EXISTS `zooq` (`task_name` TEXT NOT NULL,
+                                                                    `priority` INTEGER NOT NULL,
+                                                                    `depends_on` TEXT NOT NULL,
+                                                                    `pid` INTEGER,
+                                                                    `task_obj` TEXT,
                                                                     PRIMARY KEY(`task_name`,`depends_on`,`task_obj`))""")
         curs.execute('UPDATE `zooq` SET `priority`=0,`pid`=NULL WHERE `pid` != NULL')
 
