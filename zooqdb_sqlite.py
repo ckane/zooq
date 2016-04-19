@@ -5,11 +5,12 @@
 # This provides a persistent queue, that can be used to facilitate
 # restartable ZooQ implementations
 #
+from zooqdb import ZooQDB
 import sqlite3
 
 # TODO - Queries below have duplicated rows for when multiple depends_on exist.
 #        Need to de-dupe in queries
-class ZooQDB_SQLite(object):
+class ZooQDB_SQLite(ZooQDB):
     def __init__(self, dbname):
         self.__dbconn = sqlite3.connect(dbname)
         self.__dbconn.execute("""CREATE TABLE IF NOT EXISTS `zooq` (`task_name` AS TEXT NOT NULL,
