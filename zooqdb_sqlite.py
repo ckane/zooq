@@ -141,5 +141,10 @@ class ZooQDB_SQLite(ZooQDB):
         pri = 1
         if task['priority'] == 'high':
             pri = 0
-        self.__dbconn.execute('INSERT INTO `zooq` (`task_name`,`priority`,`pid`,`depends_on`,`task_obj`) VALUES (?,?,?,?,?)',
-                     (task['task_name'], pri, task['pid'], task['depends_on'], task['task_obj']))
+        if not task['depends_on']:
+            self.__dbconn.execute('INSERT INTO `zooq` (`task_name`,`priority`,`pid`,`task_obj`) VALUES (?,?,?,?)',
+                                  (task['task_name'], pri, task['pid'], task['task_obj']))
+        else:
+            for d in task['depends_on']:
+                self.__dbconn.execute('INSERT INTO `zooq` (`task_name`,`priority`,`pid`,`depends_on`,`task_obj`) VALUES (?,?,?,?,?)',
+                                      (task['task_name'], pri, task['pid'], d, task['task_obj']))
