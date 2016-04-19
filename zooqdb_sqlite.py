@@ -138,7 +138,6 @@ class ZooQDB_SQLite(ZooQDB):
         return None
 
     def active_next(self, task):
-        self.__active_queue.append(task)
         pri = 1
         if task['priority'] == 'high':
             pri = 0
