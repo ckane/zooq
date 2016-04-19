@@ -18,6 +18,7 @@ class ZooQDB_SQLite(object):
                                                                     `pid` AS INTEGER,
                                                                     `task_obj` AS TEXT,
                                                                     PRIMARY KEY(`task_name`,`depends_on`,`task_obj`))""")
+        curs.execute('UPDATE `zooq` SET `priority`=0,`pid`=NULL WHERE `pid` != NULL')
 
     def qsize(self):
         curs = self.__dbconn.cursor()
