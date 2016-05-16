@@ -52,10 +52,10 @@ class ZooQDB_SQLite(ZooQDB):
         pri = 1
         if task['priority'] == 'high':
             pri = 0
-        if len(task['depends_on']) == 0:
+        if len(task['dependson']) == 0:
             curs.execute('INSERT INTO `zooq` (`task_name`,`priority`,`task_obj`) VALUES (?,?,?)',
                          (task['task_name'], pri, task['task_obj']))
-        for dep in task['depends_on']:
+        for dep in task['dependson']:
             curs.execute('INSERT INTO `zooq` (`task_name`,`priority`,`depends_on`,`task_obj`) VALUES (?,?,?,?)',
                          (task['task_name'], pri, dep, task['task_obj']))
         self.__dbconn.commit()
@@ -85,20 +85,20 @@ class ZooQDB_SQLite(ZooQDB):
             if row[0] != cur_task_name or row[4] != cur_task_obj:
                 if len(cur_task_name) > 0 and len(cur_task_obj) > 0:
                     if active_item:
-                        active_item['depends_on'] = filter(lambda x: x != None, active_item['depends_on'])
+                        active_item['dependson'] = filter(lambda x: x != None, active_item['dependson'])
                     activeq.append(active_item)
 
                 active_item = {'task_name': row[0], 'priority': pri,
-                               'depends_on': [row[2]],
+                               'dependson': [row[2]],
                                'pid': -1 if pending else row[3],
                                'task_obj': row[4]}
                 cur_task_name = active_item['task_name']
                 cur_task_obj = active_item['task_obj']
             else:
-                active_item['depends_on'].append(row[2])
+                active_item['dependson'].append(row[2])
 
         if active_item:
-            active_item['depends_on'] = filter(lambda x: x != None, active_item['depends_on'])
+            active_item['dependson'] = filter(lambda x: x != None, active_item['dependson'])
             activeq.append(active_item)
         curs.close()
         return activeq
@@ -132,7 +132,7 @@ class ZooQDB_SQLite(ZooQDB):
         nextjob = None
         pqueue = self.get_pending()
         for i in xrange(len(pqueue) - 1, -1, -1):
-            pending_sigs = set(pqueue[i]['depends_on'])
+            pending_sigs = set(pqueue[i]['dependson'])
             if len(active_sigs & pending_sigs) == 0:
                 nextjob = pqueue[i]
                 curs = self.__dbconn.cursor()
@@ -148,11 +148,11 @@ class ZooQDB_SQLite(ZooQDB):
         pri = 1
         if task['priority'] == 'high':
             pri = 0
-        if not task['depends_on']:
+        if not task['dependson']:
             self.__dbconn.execute('INSERT INTO `zooq` (`task_name`,`priority`,`pid`,`task_obj`) VALUES (?,?,?,?)',
                                   (task['task_name'], pri, task['pid'], task['task_obj']))
         else:
-            for d in task['depends_on']:
+            for d in task['dependson']:
                 self.__dbconn.execute('INSERT INTO `zooq` (`task_name`,`priority`,`pid`,`depends_on`,`task_obj`) VALUES (?,?,?,?,?)',
                                       (task['task_name'], pri, task['pid'], d, task['task_obj']))
         self.__dbconn.commit()
