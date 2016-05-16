@@ -83,24 +83,25 @@ class ZooQDB_SQLite(ZooQDB):
             pri = 'low'
             if row[1] == 0:
                 pri = 'high'
-            if row[0] != cur_task_name or row[4] != cur_task_obj:
-                if len(cur_task_name) > 0 and len(cur_task_obj) > 0:
-                    if active_item:
-                        active_item['dependson'] = filter(lambda x: x != None, active_item['dependson'])
-                    activeq.append(active_item)
 
+            # See if the current row describes a task already instantiated
+            cur_item = -1
+            for i in xrange(0, len(activeq)):
+                if activeq[i]['task_name'] == row[0] and activeq[i]['task_obj'] == row[4]:
+                    cur_item = i
+                    break
+
+            # Create the new task object on the queue if it isn't already there
+            if cur_item == -1:
                 active_item = {'task_name': row[0], 'priority': pri,
-                               'dependson': [row[2]],
+                               'dependson': [row[2]] if row[2] else [],
                                'pid': -1 if pending else row[3],
                                'task_obj': row[4]}
-                cur_task_name = active_item['task_name']
-                cur_task_obj = active_item['task_obj']
+                cur_item = len(activeq)
+                activeq.append(active_item)
             else:
-                active_item['dependson'].append(row[2])
+                activeq[cur_item]['dependson'].append(row[2])
 
-        if active_item:
-            active_item['dependson'] = filter(lambda x: x != None, active_item['dependson'])
-            activeq.append(active_item)
         curs.close()
         return activeq
 
