@@ -18,7 +18,8 @@ class ZooQDB_SQLite(ZooQDB):
                                                                     `depends_on` TEXT,
                                                                     `pid` INTEGER,
                                                                     `task_obj` TEXT,
-                                                                    PRIMARY KEY(`task_name`,`depends_on`,`task_obj`))""")
+                                                                    `pos` INTEGER PRIMARY KEY)""")
+
         curs = self.__dbconn.cursor()
         curs.execute('UPDATE `zooq` SET `priority`=0,`pid`=NULL WHERE `pid` IS NOT NULL')
         self.__dbconn.commit()
@@ -70,9 +71,9 @@ class ZooQDB_SQLite(ZooQDB):
         return rc > 0
 
     def get_tasks(self, pending=False):
-        query = 'SELECT * FROM `zooq` WHERE `pid` IS NOT NULL GROUP BY `task_name`,`task_obj`'
+        query = 'SELECT `task_name`,`priority`,`depends_on`,`pid`,`task_obj` FROM `zooq` WHERE `pid` IS NOT NULL ORDER BY `pos`'
         if pending:
-            query = 'SELECT * FROM `zooq` WHERE `pid` IS NULL GROUP BY `task_name`,`task_obj`'
+            query = 'SELECT `task_name`,`priority`,`depends_on`,`pid`,`task_obj` FROM `zooq` WHERE `pid` IS NULL ORDER BY `pos`'
         activeq = []
         active_item = {}
         curs = self.__dbconn.cursor()
