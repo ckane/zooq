@@ -160,7 +160,6 @@ class ZooQ(object):
 
                     if nextjob:
                         print('Submitting: {0}'.format(json.dumps(nextjob)))
-                        print(self.__tasks)
                         if nextjob['task_name'] in self.__tasks:
                             ctor = getattr(self.__tasks[nextjob['task_name']], nextjob['task_name'])
                             task_instance = ctor(nextjob['task_obj'])
