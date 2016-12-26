@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 #
 
 # Basically a base-class for implementing
@@ -30,7 +30,7 @@ class ZooQDB(object):
             self.__pending_queue.insert(0, task)
 
     def reclaim(self, p_id):
-        for x in xrange(len(self.__active_queue)):
+        for x in range(len(self.__active_queue)):
             if self.__active_queue[x]['pid'] == p_id:
                 self.__active_queue.pop(x)
                 return True
@@ -55,7 +55,7 @@ class ZooQDB(object):
         active_sigs = set(['{0}-{1}'.format(x['task_name'],
                           x['task_obj']) for x in self.get_all()])
         nextjob = None
-        for i in xrange(self.get_plen() - 1, -1, -1):
+        for i in range(self.get_plen() - 1, -1, -1):
             pending_sigs = set(self.__pending_queue[i]['dependson'])
             if len(active_sigs & pending_sigs) == 0:
                 nextjob = self.__pending_queue.pop(i)

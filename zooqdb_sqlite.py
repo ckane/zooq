@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 #
 # SQLite3 implementation of ZooQ
 #
@@ -86,7 +86,7 @@ class ZooQDB_SQLite(ZooQDB):
 
             # See if the current row describes a task already instantiated
             cur_item = -1
-            for i in xrange(0, len(activeq)):
+            for i in range(0, len(activeq)):
                 if activeq[i]['task_name'] == row[0] and activeq[i]['task_obj'] == row[4]:
                     cur_item = i
                     break
@@ -133,7 +133,7 @@ class ZooQDB_SQLite(ZooQDB):
                           x['task_obj']) for x in self.get_all()])
         nextjob = None
         pqueue = self.get_pending()
-        for i in xrange(len(pqueue) - 1, -1, -1):
+        for i in range(len(pqueue) - 1, -1, -1):
             pending_sigs = set(pqueue[i]['dependson'])
             if len(active_sigs & pending_sigs) == 0:
                 nextjob = pqueue[i]

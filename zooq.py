@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 #
 
 #
@@ -60,7 +60,7 @@ class ZooQ(object):
 
                 # If returning 0 data, then the handle must have closed. Clean it up
                 if not job_request:
-                    for i in xrange(0, len(self.__connected)):
+                    for i in range(0, len(self.__connected)):
                         if r is self.__connected[i]:
                             self.__connected.pop(i)
                             r.close()
@@ -82,7 +82,7 @@ class ZooQ(object):
                 self.__listener.close()
                 self.__listener = None
             else:
-                for i in xrange(0, len(self.__connected)):
+                for i in range(0, len(self.__connected)):
                     if x is self.__connected[i]:
                         self.__connected.pop(i)
                         x.close()

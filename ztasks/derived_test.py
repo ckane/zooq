@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 #
 # This is an example task which will be automatically discovered
 # by the name of 'derived_test' by ZooQ, and will be plugged in
@@ -8,7 +8,7 @@
 # and discovery works for new task definitions. In this case, it
 # is a modification which executes each task twice.
 #
-from ztask_base import ztask_base
+from ztasks.ztask_base import ztask_base
 
 class derived_test(ztask_base):
     def __init__(self, objid):
