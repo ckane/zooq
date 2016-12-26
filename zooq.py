@@ -13,13 +13,12 @@ from socket import socket, AF_UNIX, SOCK_STREAM
 from select import select
 from fcntl import fcntl, F_SETFL, F_SETFD, FD_CLOEXEC
 import json
-from ztasks import *
-import ztasks.ztask_base
+import importlib
 import sys
 from zooqdb import ZooQDB
 
 class ZooQ(object):
-    def __init__(self, max_procs=8, heartbeat=10, socket_name='/tmp/zooq.sock', db=None):
+    def __init__(self, max_procs=8, heartbeat=10, socket_name='/tmp/zooq.sock', db=None, taskdirs=['ztasks']):
         if db:
             self.__db = db
         else:
@@ -33,6 +32,14 @@ class ZooQ(object):
         self.__listener = None
         self.__connected = []
         self.__socket_name = socket_name
+        self.__tasks = {}
+        for t in taskdirs:
+            self.load_tasks(t)
+
+    def load_tasks(self, taskdir):
+        tdir = importlib.import_module(taskdir, taskdir)
+        for m in tdir.__all__:
+            self.__tasks[m] = importlib.import_module('{0}.{1}'.format(taskdir, m), '{0}.{1}'.format(taskdir, m))
 
     def sendtask(self, task_name, objid, dependson=[], priority='low'):
         self.__pwrite.write(json.dumps({'task_name': task_name, 'task_obj': objid, 'pid': -1, 'priority': priority, 'dependson': dependson}) + '\n')
@@ -153,8 +160,10 @@ class ZooQ(object):
 
                     if nextjob:
                         print('Submitting: {0}'.format(json.dumps(nextjob)))
-                        if nextjob['task_name'] in dir(ztasks):
-                            task_instance = eval('ztasks.{0}.{0}'.format(nextjob['task_name']))(nextjob['task_obj'])
+                        print(self.__tasks)
+                        if nextjob['task_name'] in self.__tasks:
+                            ctor = getattr(self.__tasks[nextjob['task_name']], nextjob['task_name'])
+                            task_instance = ctor(nextjob['task_obj'])
                             nextjob['pid'] = fork()
 
                             if nextjob['pid'] == 0:
