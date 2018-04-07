@@ -59,6 +59,8 @@ cur.execute('INSERT INTO `samples` (`mwpath`,`mwid`) VALUES (?,?)', ('{root}/{di
                                                                                              fn=basefile),malsha256,))
 dbconn.commit()
 cur.close()
+
+# Signature describing what actions (modules) to execute
 data = {'task_obj': malsha256, 'task_name': 'exifdata', 'pid': -1,
          'priority': 'low', 'dependson': []}
 
