@@ -18,7 +18,7 @@ import sys
 from zooqdb import ZooQDB
 
 class ZooQ(object):
-    def __init__(self, max_procs=8, heartbeat=10, socket_name='/tmp/zooq.sock', db=None, taskdirs=['ztasks']):
+    def __init__(self, max_procs=8, heartbeat=10, socket_name='/tmp/zooq.sock', db=None, taskdirs=['ztasks'], dirname='.'):
         if db:
             self.__db = db
         else:
@@ -33,6 +33,7 @@ class ZooQ(object):
         self.__connected = []
         self.__socket_name = socket_name
         self.__tasks = {}
+        self.__dir = dirname
         for t in taskdirs:
             self.load_tasks(t)
 
@@ -162,7 +163,7 @@ class ZooQ(object):
                         print('Submitting: {0}'.format(json.dumps(nextjob)))
                         if nextjob['task_name'] in self.__tasks:
                             ctor = getattr(self.__tasks[nextjob['task_name']], nextjob['task_name'])
-                            task_instance = ctor(nextjob['task_obj'])
+                            task_instance = ctor(nextjob['task_obj'], dir=self.__dir)
                             nextjob['pid'] = fork()
 
                             if nextjob['pid'] == 0:

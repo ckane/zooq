@@ -17,7 +17,8 @@ args = ap.parse_args()
 
 db = ZooQDB_SQLite('{dir}/zooqdb.sqlite'.format(dir=args.dir))
 
-z = ZooQ(max_procs=args.numprocs, db=db, socket_name='{dir}/zooq.sock'.format(args.dir))
+z = ZooQ(max_procs=args.numprocs, db=db, socket_name='{dir}/zooq.sock'.format(dir=args.dir),
+         dirname=args.dir)
 z.Run()
 
 while args.foreground and True:
