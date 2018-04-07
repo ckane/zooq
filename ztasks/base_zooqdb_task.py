@@ -11,7 +11,7 @@ from ztasks.ztask_base import ztask_base
 
 class base_zooqdb_task(ztask_base):
     def __init__(self, objid, dir):
-        super(exifdata, self).__init__(objid, dir)
+        super(base_zooqdb_task, self).__init__(objid, dir)
         self.__sqlite3 = '{dir}/samples.sqlite'.format(dir=self.dirname())
 
     def get_mw_path(self):
@@ -27,10 +27,4 @@ class base_zooqdb_task(ztask_base):
         return None
 
     def dowork(self):
-        mwpath = self.get_mw_path()
-        if mwpath:
-            mwdir = os.path.dirname(mwpath)
-            outfile = open(mwdir+'/exiftool.json', 'wb')
-            proc = Popen(['exiftool', '-j', mwpath],
-                         stderr=DEVNULL, stdout=outfile, stdin=DEVNULL)
-            proc.wait()
+        pass
