@@ -12,7 +12,7 @@ ap.add_argument('-d', '--dir', required=False, default='.', action='store',
 ap.add_argument('-n', '--numprocs', required=False, default=4, action='store',
                 type=int, help='Number of parallel processes')
 ap.add_argument('-f', '--foreground', required=False, default=False, action='store_true',
-                type=bool, help='Remain in foreground')
+                help='Remain in foreground')
 args = ap.parse_args()
 
 db = ZooQDB_SQLite('{dir}/zooqdb.sqlite'.format(dir=args.dir))
