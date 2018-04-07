@@ -11,8 +11,8 @@
 from ztasks.ztask_base import ztask_base
 
 class derived_test(ztask_base):
-    def __init__(self, objid):
-        super(derived_test, self).__init__(objid)
+    def __init__(self, objid, dir):
+        super(derived_test, self).__init__(objid, dir)
 
     def dowork(self):
         # Execute underlying work action twice

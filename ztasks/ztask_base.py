@@ -6,8 +6,12 @@ class ztask_base(object):
     def objid(self):
         return self.__objid
 
-    def __init__(self, objid):
+    def dirname(self):
+        return self.__dir
+
+    def __init__(self, objid, dir):
         self.__objid = objid
+        self.__dir = dir
 
     def dowork(self):
         print("Doing work, waiting {0} seconds...".format(self.__objid))
